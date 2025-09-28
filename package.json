@@ -1,16 +1,21 @@
 {
-  "name": "jwt-pizza-service",
-  "description": "Backend service for making JWT pizzas",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "start": "cd src && node index.js"
-  },
-  "license": "MIT",
-  "dependencies": {
-    "bcrypt": "^5.1.1",
-    "express": "^4.19.2",
-    "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.9.7"
-  }
+    "name": "jwt-pizza-service",
+    "description": "Backend service for making JWT pizzas",
+    "version": "1.0.0",
+    "main": "index.js",
+    "scripts": {
+        "start": "cd src && node index.js",
+        "test": "jest"
+    },
+    "license": "MIT",
+    "dependencies": {
+        "bcrypt": "^5.1.1",
+        "express": "^4.19.2",
+        "jsonwebtoken": "^9.0.2",
+        "mysql2": "^3.9.7"
+    },
+    "devDependencies": {
+        "jest": "^30.1.3",
+        "supertest": "^7.1.4"
+    }
 }
