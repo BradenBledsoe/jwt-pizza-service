@@ -12,38 +12,32 @@ beforeAll(async () => {
     testUser.email = randomName() + "@test.com";
     const registerRes = await request(app).post("/api/auth").send(testUser);
     testUserAuthToken = registerRes.body.token;
+    testUser.id = registerRes.body.user.id;
     expectValidJwt(testUserAuthToken);
 });
 
-test("login", async () => {
-    const loginRes = await request(app).put("/api/auth").send(testUser);
-    expect(loginRes.status).toBe(200);
-    expectValidJwt(loginRes.body.token);
+test("getUser", async () => {
+    const getUserRes = await request(app)
+        .get("/api/user/me")
+        .set("Authorization", `Bearer ${testUserAuthToken}`);
+    expect(getUserRes.status).toBe(200);
 
     const expectedUser = { ...testUser, roles: [{ role: "diner" }] };
     delete expectedUser.password;
-    expect(loginRes.body.user).toMatchObject(expectedUser);
+    expect(getUserRes.body).toMatchObject(expectedUser);
 });
 
-test("register with auth in header", async () => {
-    const registerRes = await request(app)
-        .post("/api/auth")
+test("updateUser", async () => {
+    const updatedUserRes = await request(app)
+        .put(`/api/user/${testUser.id}`)
         .set("Authorization", `Bearer ${testUserAuthToken}`)
         .send(testUser);
-    expect(registerRes.status).toBe(200);
-    expectValidJwt(registerRes.body.token);
+    expect(updatedUserRes.status).toBe(200);
+    expectValidJwt(updatedUserRes.body.token);
 
     const expectedUser = { ...testUser, roles: [{ role: "diner" }] };
     delete expectedUser.password;
-    expect(registerRes.body.user).toMatchObject(expectedUser);
-});
-
-test("logout", async () => {
-    const logoutRes = await request(app)
-        .delete("/api/auth")
-        .set("Authorization", `Bearer ${testUserAuthToken}`);
-    expect(logoutRes.status).toBe(200);
-    expect(logoutRes.body).toEqual({ message: "logout successful" });
+    expect(updatedUserRes.body.user).toMatchObject(expectedUser);
 });
 
 function expectValidJwt(potentialJwt) {
