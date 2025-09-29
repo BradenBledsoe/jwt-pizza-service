@@ -2,13 +2,6 @@ const request = require("supertest");
 const app = require("../service");
 const { Role, DB } = require("../database/database.js");
 
-const testMenuItem = {
-    id: 1,
-    title: "Veggie",
-    image: "pizza1.png",
-    price: 0.0038,
-    description: "A garden of delight",
-};
 let testUserAuthToken;
 
 async function createAdminUser() {
