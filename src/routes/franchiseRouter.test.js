@@ -5,6 +5,9 @@ const { Role, DB } = require("../database/database.js");
 let adminUser;
 let testUserAuthToken;
 
+const createdFranchises = [];
+const createdStores = [];
+
 function randomName() {
     return Math.random().toString(36).substring(2, 12);
 }
@@ -17,6 +20,25 @@ async function createAdminUser() {
     user = await DB.addUser(user);
     return { ...user, password: "toomanysecrets" };
 }
+
+// Centralized cleanup after each test
+afterEach(async () => {
+    // Delete all created stores first
+    for (const store of createdStores) {
+        await request(app)
+            .delete(`/api/franchise/${store.franchiseId}/store/${store.id}`)
+            .set("Authorization", `Bearer ${testUserAuthToken}`);
+    }
+    createdStores.length = 0;
+
+    // Delete all created franchises
+    for (const franchiseId of createdFranchises) {
+        await request(app)
+            .delete(`/api/franchise/${franchiseId}`)
+            .set("Authorization", `Bearer ${testUserAuthToken}`);
+    }
+    createdFranchises.length = 0;
+});
 
 beforeAll(async () => {
     adminUser = await createAdminUser();
@@ -53,10 +75,7 @@ test("createFranchise", async () => {
         admins: [{ email: adminUser.email }],
     });
 
-    // cleanup
-    await request(app)
-        .delete(`/api/franchise/${res.body.id}`)
-        .set("Authorization", `Bearer ${testUserAuthToken}`);
+    createdFranchises.push(res.body.id); // track for cleanup
 });
 
 test("createStore", async () => {
@@ -70,6 +89,7 @@ test("createStore", async () => {
         });
 
     const franchiseId = franchiseRes.body.id;
+    createdFranchises.push(franchiseId);
 
     const storeData = { name: "StoreTest" };
     const storeRes = await request(app)
@@ -83,13 +103,7 @@ test("createStore", async () => {
         name: "StoreTest",
     });
 
-    // cleanup store + franchise
-    await request(app)
-        .delete(`/api/franchise/${franchiseId}/store/${storeRes.body.id}`)
-        .set("Authorization", `Bearer ${testUserAuthToken}`);
-    await request(app)
-        .delete(`/api/franchise/${franchiseId}`)
-        .set("Authorization", `Bearer ${testUserAuthToken}`);
+    createdStores.push({ id: storeRes.body.id, franchiseId }); // track for cleanup
 });
 
 test("deleteFranchise", async () => {
@@ -110,6 +124,8 @@ test("deleteFranchise", async () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ message: "franchise deleted" });
+
+    // do not add to createdFranchises since it's already deleted
 });
 
 test("getUserFranchises", async () => {
@@ -123,6 +139,7 @@ test("getUserFranchises", async () => {
         });
 
     const franchiseId = franchiseRes.body.id;
+    createdFranchises.push(franchiseId);
 
     // call API to get user franchises
     const getUserFranchiseRes = await request(app)
@@ -142,11 +159,6 @@ test("getUserFranchises", async () => {
             }),
         ])
     );
-
-    // cleanup
-    await request(app)
-        .delete(`/api/franchise/${franchiseId}`)
-        .set("Authorization", `Bearer ${testUserAuthToken}`);
 });
 
 function expectValidJwt(potentialJwt) {
