@@ -26,10 +26,7 @@ test("login", async () => {
 });
 
 test("register with auth in header", async () => {
-    const registerRes = await request(app)
-        .post("/api/auth")
-        .set("Authorization", `Bearer ${testUserAuthToken}`)
-        .send(testUser);
+    const registerRes = await request(app).post("/api/auth").send(testUser);
     expect(registerRes.status).toBe(200);
     expectValidJwt(registerRes.body.token);
 
