@@ -105,7 +105,7 @@ class DB {
                 if (result.affectedRows === 0) {
                     throw new StatusCodeError("user not found", 404);
                 }
-            } catch (err) {
+            } catch {
                 // Rollback if any error occurs
                 await connection.rollback();
                 throw new StatusCodeError("unable to delete user", 500);
