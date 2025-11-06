@@ -8,6 +8,7 @@ const config = require("./config.js");
 const metrics = require("./metrics"); // import your metrics module
 
 const app = express();
+app.use(metrics.requestTracker);
 app.use(express.json());
 app.use(setAuthUser);
 app.use((req, res, next) => {
@@ -63,7 +64,6 @@ app.use((err, req, res, next) => {
     next();
 });
 
-app.use(metrics.requestTracker);
 metrics.sendMetricsPeriodically(1000);
 
 module.exports = app;
