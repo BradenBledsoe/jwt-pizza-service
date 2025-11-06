@@ -59,6 +59,12 @@ function createMetric(name, value, type, unit) {
                 {
                     asInt: value,
                     timeUnixNano: Date.now() * 1000000,
+                    attributes: [
+                        {
+                            key: "source",
+                            value: { stringValue: "jwt-pizza-service" },
+                        },
+                    ],
                 },
             ],
         },
