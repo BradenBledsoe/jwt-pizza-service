@@ -57,7 +57,7 @@ function createMetric(name, value, type, unit) {
         [type]: {
             dataPoints: [
                 {
-                    asInt: value,
+                    asDouble: value,
                     timeUnixNano: Date.now() * 1000000,
                 },
             ],
