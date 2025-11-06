@@ -57,7 +57,7 @@ function createMetric(name, value, type, unit) {
         [type]: {
             dataPoints: [
                 {
-                    asDouble: value,
+                    asInt: value,
                     timeUnixNano: Date.now() * 1000000,
                 },
             ],
@@ -75,7 +75,7 @@ function createMetric(name, value, type, unit) {
 
 function getCpuUsagePercentage() {
     const cpuUsage = os.loadavg()[0] / os.cpus().length;
-    return cpuUsage.toFixed(2) * 100;
+    return Number((cpuUsage * 100).toFixed(2));
 }
 
 function getMemoryUsagePercentage() {
@@ -83,7 +83,7 @@ function getMemoryUsagePercentage() {
     const freeMemory = os.freemem();
     const usedMemory = totalMemory - freeMemory;
     const memoryUsage = (usedMemory / totalMemory) * 100;
-    return memoryUsage.toFixed(2);
+    return Number(((usedMemory / totalMemory) * 100).toFixed(2));
 }
 
 // --- Main periodic function ---
