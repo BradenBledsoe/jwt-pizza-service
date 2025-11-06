@@ -51,6 +51,14 @@ class OtelMetricBuilder {
 
 // --- Metric Helpers ---
 function createMetric(name, value, type, unit) {
+    const attributes = [
+        { key: "source", value: { stringValue: "jwt-pizza-service" } },
+        ...Object.entries(extraAttributes).map(([k, v]) => ({
+            key: k,
+            value: { stringValue: v.toString() },
+        })),
+    ];
+
     const metric = {
         name,
         unit,
@@ -59,12 +67,7 @@ function createMetric(name, value, type, unit) {
                 {
                     asInt: value,
                     timeUnixNano: Date.now() * 1000000,
-                    attributes: [
-                        {
-                            key: "source",
-                            value: { stringValue: "jwt-pizza-service" },
-                        },
-                    ],
+                    attributes,
                 },
             ],
         },
@@ -107,29 +110,13 @@ function sendMetricsPeriodically(period) {
             const metrics = new OtelMetricBuilder();
 
             // Build system metrics
-
             Object.keys(requests).forEach((endpoint) => {
                 metrics.add(
-                    createMetric(
-                        "requests",
-                        requests[endpoint],
-                        "1",
-                        "sum",
-                        "asInt",
-                        {
-                            endpoint,
-                        }
-                    )
+                    createMetric("requests", requests[endpoint], "sum", "1", {
+                        endpoint,
+                    })
                 );
             });
-            metrics.add(
-                createMetric(
-                    "http_requests_total",
-                    httpRequestCounts.total,
-                    "sum",
-                    "1"
-                )
-            );
             metrics.add(
                 createMetric("cpu", getCpuUsagePercentage(), "gauge", "%")
             );
