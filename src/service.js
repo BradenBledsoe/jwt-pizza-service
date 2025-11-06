@@ -63,6 +63,7 @@ app.use((err, req, res, next) => {
     next();
 });
 
+app.use(metrics.requestTracker);
 metrics.sendMetricsPeriodically(1000);
 
 module.exports = app;

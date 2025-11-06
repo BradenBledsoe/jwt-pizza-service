@@ -57,7 +57,7 @@ function createMetric(name, value, type, unit) {
         [type]: {
             dataPoints: [
                 {
-                    asInt: value,
+                    asDoubles: value,
                     timeUnixNano: Date.now() * 1000000,
                     attributes: [
                         {
@@ -91,6 +91,25 @@ function getMemoryUsagePercentage() {
     return Number(((usedMemory / totalMemory) * 100).toFixed(2));
 }
 
+// Track HTTP requests
+const httpRequestCounts = {
+    total: 0,
+    GET: 0,
+    POST: 0,
+    PUT: 0,
+    DELETE: 0,
+};
+
+function requestTracker(req, res, next) {
+    const method = req.method.toUpperCase();
+    httpRequestCounts.total++;
+    if (httpRequestCounts[method] !== undefined) {
+        httpRequestCounts[method]++;
+    }
+
+    next();
+}
+
 // --- Main periodic function ---
 let requests = 0;
 let latency = 0;
@@ -101,34 +120,53 @@ function sendMetricsPeriodically(period) {
             const metrics = new OtelMetricBuilder();
 
             // Build system metrics
-            const cpu = createMetric(
-                "cpu",
-                getCpuUsagePercentage(),
-                "gauge",
-                "%"
+            metrics.add(
+                createMetric(
+                    "http_requests_total",
+                    httpRequestCounts.total,
+                    "sum",
+                    "1"
+                )
             );
-            const memory = createMetric(
-                "memory",
-                getMemoryUsagePercentage(),
-                "gauge",
-                "%"
+            metrics.add(
+                createMetric(
+                    "http_requests_get",
+                    httpRequestCounts.GET,
+                    "sum",
+                    "1"
+                )
             );
-            metrics.add(cpu);
-            metrics.add(memory);
+            metrics.add(
+                createMetric(
+                    "http_requests_get",
+                    httpRequestCounts.POST,
+                    "sum",
+                    "1"
+                )
+            );
+            metrics.add(
+                createMetric(
+                    "http_requests_get",
+                    httpRequestCounts.PUT,
+                    "sum",
+                    "1"
+                )
+            );
+            metrics.add(
+                createMetric(
+                    "http_requests_get",
+                    httpRequestCounts.DELETE,
+                    "sum",
+                    "1"
+                )
+            );
 
-            // Simulate other metrics
-            requests += Math.floor(Math.random() * 200) + 1;
-            latency += Math.floor(Math.random() * 200) + 1;
-
-            const http = createMetric("requests", requests, "sum", "1");
-            const latencyMetric = createMetric("latency", latency, "sum", "ms");
-            metrics.add(http);
-            metrics.add(latencyMetric);
-
-            // You can define and add userMetrics, purchaseMetrics, authMetrics here too
-            // metrics.add(userMetrics);
-            // metrics.add(purchaseMetrics);
-            // metrics.add(authMetrics);
+            metrics.add(
+                createMetric("cpu", getCpuUsagePercentage(), "gauge", "%")
+            );
+            metrics.add(
+                createMetric("memory", getMemoryUsagePercentage(), "gauge", "%")
+            );
 
             metrics.sendToGrafana();
         } catch (error) {
@@ -138,5 +176,6 @@ function sendMetricsPeriodically(period) {
 }
 
 module.exports = {
+    requestTracker,
     sendMetricsPeriodically,
 };
