@@ -57,7 +57,7 @@ function createMetric(name, value, type, unit) {
         [type]: {
             dataPoints: [
                 {
-                    asDoubles: value,
+                    asInt: Math.round(value),
                     timeUnixNano: Date.now() * 1000000,
                     attributes: [
                         {
