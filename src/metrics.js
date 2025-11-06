@@ -50,7 +50,7 @@ class OtelMetricBuilder {
 }
 
 // --- Metric Helpers ---
-function createMetric(name, value, type, unit) {
+function createMetric(name, value, type, unit, extraAttributes = {}) {
     const attributes = [
         { key: "source", value: { stringValue: "jwt-pizza-service" } },
         ...Object.entries(extraAttributes).map(([k, v]) => ({
