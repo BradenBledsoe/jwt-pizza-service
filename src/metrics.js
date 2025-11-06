@@ -1,85 +1,78 @@
 const config = require("./config");
-const metrics = require("./metrics");
 const os = require("os");
 
-let requests = 0;
-let latency = 0;
+// --- Metric Builder Mock ---
+class OtelMetricBuilder {
+    constructor() {
+        this.metrics = [];
+    }
 
-setInterval(() => {
-    const cpuUsage = getCpuUsagePercentage();
-    sendMetricToGrafana("cpu", cpuUsage, "gauge", "%");
+    add(metric) {
+        if (metric) this.metrics.push(metric);
+    }
 
-    const memoryUsage = getMemoryUsagePercentage();
-    sendMetricToGrafana("memory", memoryUsage, "gauge", "%");
+    sendToGrafana() {
+        const body = JSON.stringify({
+            resourceMetrics: [
+                {
+                    scopeMetrics: [
+                        {
+                            metrics: this.metrics,
+                        },
+                    ],
+                },
+            ],
+        });
 
-    requests += Math.floor(Math.random() * 200) + 1;
-    sendMetricToGrafana("requests", requests, "sum", "1");
-
-    latency += Math.floor(Math.random() * 200) + 1;
-    sendMetricToGrafana("latency", latency, "sum", "ms");
-}, 1000);
-
-function sendMetricToGrafana(metricName, metricValue, type, unit) {
-    const metric = {
-        resourceMetrics: [
-            {
-                scopeMetrics: [
-                    {
-                        metrics: [
-                            {
-                                name: metricName,
-                                unit: unit,
-                                [type]: {
-                                    dataPoints: [
-                                        {
-                                            asInt: metricValue,
-                                            timeUnixNano: Date.now() * 1000000,
-                                        },
-                                    ],
-                                },
-                            },
-                        ],
-                    },
-                ],
+        fetch(`${config.metrics.url}`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${config.metrics.apiKey}`,
+                "Content-Type": "application/json",
             },
-        ],
+            body,
+        })
+            .then((res) => {
+                if (!res.ok) {
+                    res.text().then((text) =>
+                        console.error(
+                            `Failed to send metrics: ${text}\n${body}`
+                        )
+                    );
+                } else {
+                    console.log(
+                        `Successfully pushed ${this.metrics.length} metrics`
+                    );
+                }
+            })
+            .catch((err) => console.error("Error sending metrics:", err));
+    }
+}
+
+// --- Metric Helpers ---
+function createMetric(name, value, type, unit) {
+    const metric = {
+        name,
+        unit,
+        [type]: {
+            dataPoints: [
+                {
+                    asInt: value,
+                    timeUnixNano: Date.now() * 1000000,
+                },
+            ],
+        },
     };
 
     if (type === "sum") {
-        metric.resourceMetrics[0].scopeMetrics[0].metrics[0][
-            type
-        ].aggregationTemporality = "AGGREGATION_TEMPORALITY_CUMULATIVE";
-        metric.resourceMetrics[0].scopeMetrics[0].metrics[0][
-            type
-        ].isMonotonic = true;
+        metric[type].aggregationTemporality =
+            "AGGREGATION_TEMPORALITY_CUMULATIVE";
+        metric[type].isMonotonic = true;
     }
 
-    const body = JSON.stringify(metric);
-    fetch(`${config.url}`, {
-        method: "POST",
-        body: body,
-        headers: {
-            Authorization: `Bearer ${config.apiKey}`,
-            "Content-Type": "application/json",
-        },
-    })
-        .then((response) => {
-            if (!response.ok) {
-                response.text().then((text) => {
-                    console.error(
-                        `Failed to push metrics data to Grafana: ${text}\n${body}`
-                    );
-                });
-            } else {
-                console.log(`Pushed ${metricName}`);
-            }
-        })
-        .catch((error) => {
-            console.error("Error pushing metrics:", error);
-        });
+    return metric;
 }
 
-// --- System Metric Helpers ---
 function getCpuUsagePercentage() {
     const cpuUsage = os.loadavg()[0] / os.cpus().length;
     return cpuUsage.toFixed(2) * 100;
@@ -92,3 +85,53 @@ function getMemoryUsagePercentage() {
     const memoryUsage = (usedMemory / totalMemory) * 100;
     return memoryUsage.toFixed(2);
 }
+
+// --- Main periodic function ---
+let requests = 0;
+let latency = 0;
+
+function sendMetricsPeriodically(period) {
+    setInterval(() => {
+        try {
+            const metrics = new OtelMetricBuilder();
+
+            // Build system metrics
+            const cpu = createMetric(
+                "cpu",
+                getCpuUsagePercentage(),
+                "gauge",
+                "%"
+            );
+            const memory = createMetric(
+                "memory",
+                getMemoryUsagePercentage(),
+                "gauge",
+                "%"
+            );
+            metrics.add(cpu);
+            metrics.add(memory);
+
+            // Simulate other metrics
+            requests += Math.floor(Math.random() * 200) + 1;
+            latency += Math.floor(Math.random() * 200) + 1;
+
+            const http = createMetric("requests", requests, "sum", "1");
+            const latencyMetric = createMetric("latency", latency, "sum", "ms");
+            metrics.add(http);
+            metrics.add(latencyMetric);
+
+            // You can define and add userMetrics, purchaseMetrics, authMetrics here too
+            // metrics.add(userMetrics);
+            // metrics.add(purchaseMetrics);
+            // metrics.add(authMetrics);
+
+            metrics.sendToGrafana();
+        } catch (error) {
+            console.log("Error sending metrics", error);
+        }
+    }, period);
+}
+
+module.exports = {
+    sendMetricsPeriodically,
+};
