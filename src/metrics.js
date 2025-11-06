@@ -57,7 +57,7 @@ function createMetric(name, value, type, unit) {
         [type]: {
             dataPoints: [
                 {
-                    asInt: Math.round(value),
+                    asInt: value,
                     timeUnixNano: Date.now() * 1000000,
                     attributes: [
                         {
@@ -81,14 +81,14 @@ function createMetric(name, value, type, unit) {
 
 function getCpuUsagePercentage() {
     const cpuUsage = os.loadavg()[0] / os.cpus().length;
-    return Number((cpuUsage * 100).toFixed(2));
+    return Math.round(cpuUsage * 100);
 }
 
 function getMemoryUsagePercentage() {
     const totalMemory = os.totalmem();
     const freeMemory = os.freemem();
     const usedMemory = totalMemory - freeMemory;
-    return Number(((usedMemory / totalMemory) * 100).toFixed(2));
+    return Math.round((usedMemory / totalMemory) * 100);
 }
 
 // Track HTTP requests
