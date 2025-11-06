@@ -111,9 +111,6 @@ function requestTracker(req, res, next) {
 }
 
 // --- Main periodic function ---
-let requests = 0;
-let latency = 0;
-
 function sendMetricsPeriodically(period) {
     setInterval(() => {
         try {
