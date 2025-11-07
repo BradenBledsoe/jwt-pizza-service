@@ -119,7 +119,7 @@ function countActiveUsers(windowMs = 5 * 60 * 1000) {
     const now = Date.now();
     let activeCount = 0;
 
-    for (const lastSeen of activeUsers.entries()) {
+    for (const [, lastSeen] of activeUsers.entries()) {
         if (now - lastSeen <= windowMs) {
             activeCount++;
         }
