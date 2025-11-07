@@ -122,7 +122,7 @@ authRouter.put(
             trackUserLogin(user.id);
 
             res.json({ user: user, token: auth });
-        } catch (err) {
+        } catch {
             trackAuthFailure();
             res.status(401).json({ message: "invalid credentials" });
         }
