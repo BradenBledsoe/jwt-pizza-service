@@ -94,12 +94,22 @@ function getMemoryUsagePercentage() {
     return Math.round((usedMemory / totalMemory) * 100);
 }
 
-const requests = {};
+// Track HTTP requests
+const httpRequestCounts = {
+    total: 0,
+    GET: 0,
+    POST: 0,
+    PUT: 0,
+    DELETE: 0,
+};
 
-// Middleware to track requests
 function requestTracker(req, res, next) {
-    const endpoint = `[${req.method}] ${req.path}`;
-    requests[endpoint] = (requests[endpoint] || 0) + 1;
+    const method = req.method.toUpperCase();
+    httpRequestCounts.total++;
+    if (httpRequestCounts[method] !== undefined) {
+        httpRequestCounts[method]++;
+    }
+
     next();
 }
 
@@ -110,13 +120,46 @@ function sendMetricsPeriodically(period) {
             const metrics = new OtelMetricBuilder();
 
             // Build system metrics
-            Object.keys(requests).forEach((endpoint) => {
-                metrics.add(
-                    createMetric("requests", requests[endpoint], "sum", "1", {
-                        endpoint,
-                    })
-                );
-            });
+            metrics.add(
+                createMetric(
+                    "http_requests",
+                    httpRequestCounts.total,
+                    "sum",
+                    "1"
+                )
+            );
+            metrics.add(
+                createMetric(
+                    "http_requests_get",
+                    httpRequestCounts.GET,
+                    "sum",
+                    "1"
+                )
+            );
+            metrics.add(
+                createMetric(
+                    "http_requests_post",
+                    httpRequestCounts.POST,
+                    "sum",
+                    "1"
+                )
+            );
+            metrics.add(
+                createMetric(
+                    "http_requests_put",
+                    httpRequestCounts.PUT,
+                    "sum",
+                    "1"
+                )
+            );
+            metrics.add(
+                createMetric(
+                    "http_requests_delete",
+                    httpRequestCounts.DELETE,
+                    "sum",
+                    "1"
+                )
+            );
             metrics.add(
                 createMetric("cpu", getCpuUsagePercentage(), "gauge", "%")
             );
