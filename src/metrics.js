@@ -103,6 +103,8 @@ const httpRequestCounts = {
     DELETE: 0,
 };
 
+const activeUsers = new Map();
+
 function requestTracker(req, res, next) {
     const method = req.method.toUpperCase();
     httpRequestCounts.total++;
@@ -110,7 +112,35 @@ function requestTracker(req, res, next) {
         httpRequestCounts[method]++;
     }
 
+    // If user is authenticated, track them as active
+    if (req.user && req.user.id) {
+        activeUsers.set(req.user.id, Date.now());
+    }
+
     next();
+}
+
+function countActiveUsers(windowMs = 5 * 60 * 1000) {
+    const now = Date.now();
+    let activeCount = 0;
+
+    for (const [_, lastSeen] of activeUsers.entries()) {
+        if (now - lastSeen <= windowMs) {
+            activeCount++;
+        }
+    }
+
+    return activeCount;
+}
+
+// Called when a user logs in or registers
+function trackUserLogin(userId) {
+    activeUsers.set(userId, Date.now());
+}
+
+// Called when a user logs out
+function trackUserLogout(userId) {
+    activeUsers.delete(userId);
 }
 
 // --- Main periodic function ---
@@ -160,6 +190,16 @@ function sendMetricsPeriodically(period) {
                     "1"
                 )
             );
+
+            metrics.add(
+                createMetric(
+                    "active_users",
+                    countActiveUsers(),
+                    "gauge",
+                    "users"
+                )
+            );
+
             metrics.add(
                 createMetric("cpu", getCpuUsagePercentage(), "gauge", "%")
             );
@@ -177,4 +217,6 @@ function sendMetricsPeriodically(period) {
 module.exports = {
     requestTracker,
     sendMetricsPeriodically,
+    trackUserLogin,
+    trackUserLogout,
 };
