@@ -143,6 +143,20 @@ function trackUserLogout(userId) {
     activeUsers.delete(userId);
 }
 
+// --- Authentication tracking ---
+const authMetrics = {
+    success: 0,
+    failure: 0,
+};
+
+function trackAuthSuccess() {
+    authMetrics.success++;
+}
+
+function trackAuthFailure() {
+    authMetrics.failure++;
+}
+
 // --- Main periodic function ---
 function sendMetricsPeriodically(period) {
     setInterval(() => {
@@ -201,6 +215,13 @@ function sendMetricsPeriodically(period) {
             );
 
             metrics.add(
+                createMetric("auth_success", authMetrics.success, "sum", "1")
+            );
+            metrics.add(
+                createMetric("auth_failure", authMetrics.failure, "sum", "1")
+            );
+
+            metrics.add(
                 createMetric("cpu", getCpuUsagePercentage(), "gauge", "%")
             );
             metrics.add(
@@ -219,4 +240,6 @@ module.exports = {
     sendMetricsPeriodically,
     trackUserLogin,
     trackUserLogout,
+    trackAuthSuccess,
+    trackAuthFailure,
 };

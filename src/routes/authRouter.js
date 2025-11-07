@@ -3,7 +3,12 @@ const jwt = require("jsonwebtoken");
 const config = require("../config.js");
 const { asyncHandler } = require("../endpointHelper.js");
 const { DB, Role } = require("../database/database.js");
-const { trackUserLogin, trackUserLogout } = require("../metrics");
+const {
+    trackUserLogin,
+    trackUserLogout,
+    trackAuthSuccess,
+    trackAuthFailure,
+} = require("../metrics.js");
 
 const authRouter = express.Router();
 
@@ -83,17 +88,24 @@ authRouter.post(
                 .status(400)
                 .json({ message: "name, email, and password are required" });
         }
-        const user = await DB.addUser({
-            name,
-            email,
-            password,
-            roles: [{ role: Role.Diner }],
-        });
-        const auth = await setAuth(user);
 
-        trackUserLogin(user.id);
+        try {
+            const user = await DB.addUser({
+                name,
+                email,
+                password,
+                roles: [{ role: Role.Diner }],
+            });
+            const auth = await setAuth(user);
 
-        res.json({ user: user, token: auth });
+            trackAuthSuccess();
+            trackUserLogin(user.id);
+
+            res.json({ user: user, token: auth });
+        } catch (err) {
+            trackAuthFailure();
+            res.status(500).json({ message: err.message });
+        }
     })
 );
 
@@ -102,12 +114,18 @@ authRouter.put(
     "/",
     asyncHandler(async (req, res) => {
         const { email, password } = req.body;
-        const user = await DB.getUser(email, password);
-        const auth = await setAuth(user);
+        try {
+            const user = await DB.getUser(email, password);
+            const auth = await setAuth(user);
 
-        trackUserLogin(user.id);
+            trackAuthSuccess();
+            trackUserLogin(user.id);
 
-        res.json({ user: user, token: auth });
+            res.json({ user: user, token: auth });
+        } catch (err) {
+            trackAuthFailure();
+            res.status(401).json({ message: "invalid credentials" });
+        }
     })
 );
 
