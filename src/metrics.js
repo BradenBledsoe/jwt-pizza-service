@@ -115,6 +115,24 @@ function requestTracker(req, res, next) {
     next();
 }
 
+// Called when a user logs in or registers
+function trackUserLogin(token) {
+    if (token) activeUsers.set(token, Date.now());
+}
+
+// Called when a user logs out
+function trackUserLogout(token) {
+    activeUsers.delete(token);
+}
+
+function updateUserActivity(req, res, next) {
+    const token = readAuthToken(req);
+    if (token && activeUsers.has(token)) {
+        activeUsers.set(token, Date.now());
+    }
+    next();
+}
+
 function countActiveUsers(windowMs = 5 * 60 * 1000) {
     const now = Date.now();
     let activeCount = 0;
@@ -126,16 +144,6 @@ function countActiveUsers(windowMs = 5 * 60 * 1000) {
     }
 
     return activeCount;
-}
-
-// Called when a user logs in or registers
-function trackUserLogin(token) {
-    if (token) activeUsers.set(token, Date.now());
-}
-
-// Called when a user logs out
-function trackUserLogout(token) {
-    activeUsers.delete(token);
 }
 
 // --- Authentication tracking ---
@@ -318,4 +326,5 @@ module.exports = {
     trackPizzaSold,
     trackPizzaRevenue,
     trackPizzaLatency,
+    updateUserActivity,
 };
