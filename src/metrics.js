@@ -130,12 +130,12 @@ function countActiveUsers(windowMs = 5 * 60 * 1000) {
 
 // Called when a user logs in or registers
 function trackUserLogin(token) {
-    if (token) activeUsers.set(userId, Date.now());
+    if (token) activeUsers.set(token, Date.now());
 }
 
 // Called when a user logs out
-function trackUserLogout(userId) {
-    if (token) activeUsers.delete(userId);
+function trackUserLogout(token) {
+    if (token) activeUsers.delete(token);
 }
 
 // --- Authentication tracking ---
