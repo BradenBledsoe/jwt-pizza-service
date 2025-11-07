@@ -99,7 +99,7 @@ authRouter.post(
             const auth = await setAuth(user);
 
             trackAuthSuccess();
-            trackUserLogin(user.id);
+            trackUserLogin(auth);
 
             res.json({ user: user, token: auth });
         } catch (err) {
@@ -134,10 +134,11 @@ authRouter.delete(
     "/",
     authRouter.authenticateToken,
     asyncHandler(async (req, res) => {
+        const token = readAuthToken(req);
         await clearAuth(req);
 
-        if (req.user && req.user.id) {
-            trackUserLogout(req.user.id);
+        if (token) {
+            trackUserLogout(token);
         }
 
         res.json({ message: "logout successful" });

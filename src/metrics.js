@@ -112,11 +112,6 @@ function requestTracker(req, res, next) {
         httpRequestCounts[method]++;
     }
 
-    // If user is authenticated, track them as active
-    if (req.user && req.user.id) {
-        activeUsers.set(req.user.id, Date.now());
-    }
-
     next();
 }
 
@@ -134,13 +129,13 @@ function countActiveUsers(windowMs = 5 * 60 * 1000) {
 }
 
 // Called when a user logs in or registers
-function trackUserLogin(userId) {
-    activeUsers.set(userId, Date.now());
+function trackUserLogin(token) {
+    if (token) activeUsers.set(userId, Date.now());
 }
 
 // Called when a user logs out
 function trackUserLogout(userId) {
-    activeUsers.delete(userId);
+    if (token) activeUsers.delete(userId);
 }
 
 // --- Authentication tracking ---
