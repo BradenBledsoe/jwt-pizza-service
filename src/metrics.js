@@ -280,9 +280,9 @@ function sendMetricsPeriodically(period) {
             metrics.add(
                 createMetric(
                     "pizza_revenue",
-                    pizzaMetrics.revenue,
+                    Math.round(pizzaMetrics.revenue * 100),
                     "sum",
-                    "USD"
+                    "cents"
                 )
             );
 
