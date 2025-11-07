@@ -160,28 +160,32 @@ function trackAuthFailure() {
     authMetrics.failure++;
 }
 
-// --- Latency tracking ---
-const latencyMetrics = {
-    totalLatency: 0, // cumulative latency for all requests
-    requestCount: 0, // total number of requests
-};
+const endpointLatency = {}; // { "/api/order": { total: 0, count: 0 } }
 
 function latencyTracker(req, res, next) {
     const start = Date.now();
 
-    function recordLatency() {
+    res.once("finish", () => {
         const duration = Date.now() - start;
+
+        // Track overall service latency
         latencyMetrics.totalLatency += duration;
         latencyMetrics.requestCount++;
-    }
 
-    res.once("finish", recordLatency);
-    res.once("close", recordLatency);
+        // Track latency per endpoint
+        const key = `${req.method.toUpperCase()} ${req.path}`;
+        if (!endpointLatency[key]) {
+            endpointLatency[key] = { total: 0, count: 0 };
+        }
+        endpointLatency[key].total += duration;
+        endpointLatency[key].count++;
+    });
 
     next();
 }
 
-// Helper to get the average so far
+const latencyMetrics = { totalLatency: 0, requestCount: 0 };
+
 function getAverageLatency() {
     if (latencyMetrics.requestCount === 0) return 0;
     return Math.round(
