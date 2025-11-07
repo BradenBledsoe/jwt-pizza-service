@@ -119,7 +119,7 @@ authRouter.put(
             const auth = await setAuth(user);
 
             trackAuthSuccess();
-            trackUserLogin(user.id);
+            trackUserLogin(auth);
 
             res.json({ user: user, token: auth });
         } catch {
