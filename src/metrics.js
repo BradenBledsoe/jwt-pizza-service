@@ -157,6 +157,48 @@ function trackAuthFailure() {
     authMetrics.failure++;
 }
 
+// --- Latency tracking ---
+const latencyMetrics = {
+    totalLatency: 0,
+    requestCount: 0,
+};
+
+function latencyTracker(req, res, next) {
+    const start = Date.now();
+    res.on("finish", () => {
+        const duration = Date.now() - start;
+        latencyMetrics.totalLatency += duration;
+        latencyMetrics.requestCount++;
+    });
+    next();
+}
+
+// --- Pizza metrics ---
+const pizzaMetrics = {
+    sold: 0, // total pizzas sold
+    creationFailures: 0, // failed creation attempts
+    revenue: 0, // total revenue in USD
+    totalLatency: 0, // total latency accumulated in ms
+    requestCount: 0, // number of pizza creation requests
+};
+
+function trackPizzaSold(count = 1) {
+    pizzaMetrics.sold += count;
+}
+
+function trackPizzaFailure() {
+    pizzaMetrics.creationFailures++;
+}
+
+function trackPizzaRevenue(amount) {
+    pizzaMetrics.revenue += amount;
+}
+
+function trackPizzaLatency(durationMs) {
+    pizzaMetrics.totalLatency += durationMs;
+    pizzaMetrics.requestCount++;
+}
+
 // --- Main periodic function ---
 function sendMetricsPeriodically(period) {
     setInterval(() => {
@@ -228,6 +270,40 @@ function sendMetricsPeriodically(period) {
                 createMetric("memory", getMemoryUsagePercentage(), "gauge", "%")
             );
 
+            // --- Pizza metrics ---
+            metrics.add(
+                createMetric("pizzas_sold", pizzaMetrics.sold, "sum", "1")
+            );
+            metrics.add(
+                createMetric(
+                    "pizza_creation_failures",
+                    pizzaMetrics.creationFailures,
+                    "sum",
+                    "1"
+                )
+            );
+            metrics.add(
+                createMetric(
+                    "pizza_revenue",
+                    pizzaMetrics.revenue,
+                    "sum",
+                    "USD"
+                )
+            );
+
+            // Calculate average latency
+            let avgLatency = 0;
+            if (latencyMetrics.requestCount > 0) {
+                avgLatency =
+                    latencyMetrics.totalLatency / latencyMetrics.requestCount;
+                latencyMetrics.totalLatency = 0;
+                latencyMetrics.requestCount = 0;
+            }
+
+            metrics.add(
+                createMetric("service_latency", avgLatency, "gauge", "ms")
+            );
+
             metrics.sendToGrafana();
         } catch (error) {
             console.log("Error sending metrics", error);
@@ -242,4 +318,9 @@ module.exports = {
     trackUserLogout,
     trackAuthSuccess,
     trackAuthFailure,
+    latencyTracker,
+    trackPizzaFailure,
+    trackPizzaSold,
+    trackPizzaRevenue,
+    trackPizzaLatency,
 };
