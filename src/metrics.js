@@ -126,7 +126,7 @@ function trackUserLogout(token) {
 }
 
 function updateUserActivity(req, res, next) {
-    const token = readAuthToken(req);
+    const token = req.user?.token;
     if (token && activeUsers.has(token)) {
         activeUsers.set(token, Date.now());
     }
