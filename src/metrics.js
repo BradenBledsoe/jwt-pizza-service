@@ -341,5 +341,3 @@ module.exports = {
     trackPizzaLatency,
     updateUserActivity,
 };
-
-//final working version
