@@ -294,7 +294,7 @@ function sendMetricsPeriodically(period) {
                 )
             );
 
-            // Calculate average latency
+            // Calculate average service latency
             let avgLatency = 0;
             if (latencyMetrics.requestCount > 0) {
                 avgLatency =
@@ -303,8 +303,21 @@ function sendMetricsPeriodically(period) {
                 latencyMetrics.requestCount = 0;
             }
 
+            // Calculate average pizza latency
+            let avgPizzaLatency = 0;
+            if (pizzaMetrics.requestCount > 0) {
+                avgPizzaLatency =
+                    pizzaMetrics.totalLatency / pizzaMetrics.requestCount;
+                pizzaMetrics.totalLatency = 0;
+                pizzaMetrics.requestCount = 0;
+            }
+
+            // Add latency metrics
             metrics.add(
                 createMetric("service_latency", avgLatency, "gauge", "ms")
+            );
+            metrics.add(
+                createMetric("pizza_latency", avgPizzaLatency, "gauge", "ms")
             );
 
             metrics.sendToGrafana();
