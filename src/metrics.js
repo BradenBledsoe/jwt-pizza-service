@@ -162,18 +162,31 @@ function trackAuthFailure() {
 
 // --- Latency tracking ---
 const latencyMetrics = {
-    totalLatency: 0,
-    requestCount: 0,
+    totalLatency: 0, // cumulative latency for all requests
+    requestCount: 0, // total number of requests
 };
 
 function latencyTracker(req, res, next) {
     const start = Date.now();
-    res.on("finish", () => {
+
+    function recordLatency() {
         const duration = Date.now() - start;
         latencyMetrics.totalLatency += duration;
         latencyMetrics.requestCount++;
-    });
+    }
+
+    res.once("finish", recordLatency);
+    res.once("close", recordLatency);
+
     next();
+}
+
+// Helper to get the average so far
+function getAverageLatency() {
+    if (latencyMetrics.requestCount === 0) return 0;
+    return Math.round(
+        latencyMetrics.totalLatency / latencyMetrics.requestCount
+    );
 }
 
 // --- Pizza metrics ---
@@ -202,6 +215,11 @@ function trackPizzaLatency(durationMs) {
     pizzaMetrics.requestCount++;
 }
 
+function getAveragePizzaLatency() {
+    if (pizzaMetrics.requestCount === 0) return 0;
+    return Math.round(pizzaMetrics.totalLatency / pizzaMetrics.requestCount);
+}
+
 // --- Main periodic function ---
 function sendMetricsPeriodically(period) {
     setInterval(() => {
@@ -209,6 +227,23 @@ function sendMetricsPeriodically(period) {
             const metrics = new OtelMetricBuilder();
 
             // Build system metrics
+            // System metrics...
+            metrics.add(
+                createMetric("cpu", getCpuUsagePercentage(), "gauge", "%")
+            );
+            metrics.add(
+                createMetric("memory", getMemoryUsagePercentage(), "gauge", "%")
+            );
+            metrics.add(
+                createMetric(
+                    "active_users",
+                    countActiveUsers(),
+                    "gauge",
+                    "users"
+                )
+            );
+
+            // HTTP requests
             metrics.add(
                 createMetric(
                     "http_requests",
@@ -250,15 +285,7 @@ function sendMetricsPeriodically(period) {
                 )
             );
 
-            metrics.add(
-                createMetric(
-                    "active_users",
-                    countActiveUsers(),
-                    "gauge",
-                    "users"
-                )
-            );
-
+            // Auth metrics
             metrics.add(
                 createMetric("auth_success", authMetrics.success, "sum", "1")
             );
@@ -266,14 +293,7 @@ function sendMetricsPeriodically(period) {
                 createMetric("auth_failure", authMetrics.failure, "sum", "1")
             );
 
-            metrics.add(
-                createMetric("cpu", getCpuUsagePercentage(), "gauge", "%")
-            );
-            metrics.add(
-                createMetric("memory", getMemoryUsagePercentage(), "gauge", "%")
-            );
-
-            // --- Pizza metrics ---
+            // Pizza metrics
             metrics.add(
                 createMetric("pizzas_sold", pizzaMetrics.sold, "sum", "1")
             );
@@ -294,30 +314,22 @@ function sendMetricsPeriodically(period) {
                 )
             );
 
-            // Calculate average service latency
-            let avgLatency = 0;
-            if (latencyMetrics.requestCount > 0) {
-                avgLatency =
-                    latencyMetrics.totalLatency / latencyMetrics.requestCount;
-                latencyMetrics.totalLatency = 0;
-                latencyMetrics.requestCount = 0;
-            }
-
-            // Calculate average pizza latency
-            let avgPizzaLatency = 0;
-            if (pizzaMetrics.requestCount > 0) {
-                avgPizzaLatency =
-                    pizzaMetrics.totalLatency / pizzaMetrics.requestCount;
-                pizzaMetrics.totalLatency = 0;
-                pizzaMetrics.requestCount = 0;
-            }
-
-            // Add latency metrics
+            // Latency metrics
             metrics.add(
-                createMetric("service_latency", avgLatency, "gauge", "ms")
+                createMetric(
+                    "service_latency",
+                    getAverageLatency(),
+                    "gauge",
+                    "ms"
+                )
             );
             metrics.add(
-                createMetric("pizza_latency", avgPizzaLatency, "gauge", "ms")
+                createMetric(
+                    "pizza_latency",
+                    getAveragePizzaLatency(),
+                    "gauge",
+                    "ms"
+                )
             );
 
             metrics.sendToGrafana();
