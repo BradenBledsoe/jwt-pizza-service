@@ -6,10 +6,13 @@ const userRouter = require("./routes/userRouter.js");
 const version = require("./version.json");
 const config = require("./config.js");
 const metrics = require("./metrics"); // import your metrics module
+const Logger = require("pizza-logger");
+const logger = new Logger(config);
 
 const app = express();
 app.use(metrics.latencyTracker);
 app.use(metrics.requestTracker);
+app.use(logger.httpLogger);
 app.use(express.json());
 app.use(setAuthUser);
 app.use(metrics.updateUserActivity); // track user activity for active users metric

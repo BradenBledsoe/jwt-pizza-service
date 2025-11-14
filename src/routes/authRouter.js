@@ -1,7 +1,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const config = require("../config.js");
-const { asyncHandler } = require("../endpointHelper.js");
+const { asyncHandler } = require("../endpointHelper.js").default;
 const { DB, Role } = require("../database/database.js");
 const {
     trackUserLogin,
