@@ -1,6 +1,5 @@
-import config from "./config.js";
-import pkg from "pizza-logger";
-const Logger = pkg.default || pkg;
+const config = require("./config.js");
+const Logger = require("pizza-logger");
 const logger = new Logger(config);
 class StatusCodeError extends Error {
     constructor(message, statusCode) {
@@ -14,7 +13,7 @@ const asyncHandler = (fn) => (req, res, next) => {
     return Promise.resolve(fn(req, res, next)).catch(next);
 };
 
-export default {
+module.exports = {
     asyncHandler,
     StatusCodeError,
 };
