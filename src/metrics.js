@@ -52,7 +52,7 @@ class OtelMetricBuilder {
 // --- Metric Helpers ---
 function createMetric(name, value, type, unit, extraAttributes = {}) {
     const attributes = [
-        { key: "source", value: { stringValue: "jwt-pizza-service" } },
+        { key: "source", value: { stringValue: config.metrics.source } },
         ...Object.entries(extraAttributes).map(([k, v]) => ({
             key: k,
             value: { stringValue: v.toString() },
