@@ -179,6 +179,7 @@ orderRouter.post(
                     jwt: j.jwt,
                 });
             } else {
+                trackPizzaFailure();
                 res.status(500).send({
                     message: "Failed to fulfill order at factory",
                     followLinkToEndChaos: j.reportUrl,
